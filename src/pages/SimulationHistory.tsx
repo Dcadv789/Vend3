@@ -237,23 +237,24 @@ function SimulationModal({ simulation: initialSimulation, onClose, onUpdate }: {
       let currentDate = new Date(newInstallments[0].date.split('/').reverse().join('-'));
       let remainingMonths = simulation.months;
       
+      const fixedPayment = currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, remainingMonths)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+      
       newInstallments = [];
       let installmentNumber = 1;
 
       for (const payment of payments) {
         const paymentDate = new Date(payment.date);
-        const originalPayment = currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, remainingMonths)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
 
         while (currentDate < paymentDate && currentBalance > 0) {
           const interest = currentBalance * monthlyRate;
-          const amortization = originalPayment - interest;
+          const amortization = fixedPayment - interest;
           currentBalance -= amortization;
           remainingMonths--;
 
           newInstallments.push({
             number: installmentNumber++,
             date: currentDate.toLocaleDateString('pt-BR'),
-            payment: originalPayment,
+            payment: fixedPayment,
             amortization,
             interest,
             balance: Math.max(0, currentBalance)
@@ -273,15 +274,46 @@ function SimulationModal({ simulation: initialSimulation, onClose, onUpdate }: {
             balance: Math.max(0, currentBalance)
           });
 
-          if (currentBalance > 0 && !payment.reduceInstallment) {
-            remainingMonths = newInstallments.filter(i => i.number > 0).length;
+          if (!payment.reduceInstallment) {
+            while (currentBalance > fixedPayment) {
+              const interest = currentBalance * monthlyRate;
+              const amortization = fixedPayment - interest;
+              currentBalance -= amortization;
+
+              newInstallments.push({
+                number: installmentNumber++,
+                date: currentDate.toLocaleDateString('pt-BR'),
+                payment: fixedPayment,
+                amortization,
+                interest,
+                balance: Math.max(0, currentBalance)
+              });
+
+              currentDate.setMonth(currentDate.getMonth() + 1);
+            }
+
+            if (currentBalance > 0) {
+              const interest = currentBalance * monthlyRate;
+              const finalPayment = currentBalance * (1 + monthlyRate);
+              currentBalance = 0;
+
+              newInstallments.push({
+                number: installmentNumber++,
+                date: currentDate.toLocaleDateString('pt-BR'),
+                payment: finalPayment,
+                amortization: finalPayment - interest,
+                interest,
+                balance: 0
+              });
+            }
+          } else {
             const newPayment = currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, remainingMonths)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
             
-            while (remainingMonths > 0) {
+            while (currentBalance > 0) {
               const interest = currentBalance * monthlyRate;
               const amortization = newPayment - interest;
               currentBalance -= amortization;
-              
+
               newInstallments.push({
                 number: installmentNumber++,
                 date: currentDate.toLocaleDateString('pt-BR'),
@@ -292,32 +324,27 @@ function SimulationModal({ simulation: initialSimulation, onClose, onUpdate }: {
               });
 
               currentDate.setMonth(currentDate.getMonth() + 1);
-              remainingMonths--;
             }
           }
         }
       }
 
       if (currentBalance > 0) {
-        remainingMonths = simulation.months - newInstallments.filter(i => i.number > 0).length;
-        const finalPayment = currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, remainingMonths)) / (Math.pow(1 + monthlyRate, remainingMonths) - 1);
-
-        while (remainingMonths > 0) {
+        while (currentBalance > 0) {
           const interest = currentBalance * monthlyRate;
-          const amortization = finalPayment - interest;
+          const amortization = fixedPayment - interest;
           currentBalance -= amortization;
 
           newInstallments.push({
             number: installmentNumber++,
             date: currentDate.toLocaleDateString('pt-BR'),
-            payment: finalPayment,
+            payment: fixedPayment,
             amortization,
             interest,
             balance: Math.max(0, currentBalance)
           });
 
           currentDate.setMonth(currentDate.getMonth() + 1);
-          remainingMonths--;
         }
       }
     }
@@ -713,7 +740,7 @@ export default function SimulationHistory() {
                   Data
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
+                  Tipo ```
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Banco
@@ -723,7 +750,7 @@ export default function SimulationHistory() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Entrada
-                 </th>
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Prazo
                 </th>
@@ -745,7 +772,8 @@ export default function SimulationHistory() {
                     {simulation.date}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${                      simulation.type === 'SAC' 
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      simulation.type === 'SAC' 
                         ? 'bg-green-100 text-green-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}>

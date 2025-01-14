@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Save, Eye, EyeOff } from 'lucide-react';
+import { Notification } from '../components/Notification';
 
 interface Installment {
   number: number;
@@ -23,9 +24,29 @@ export default function PriceSimulation() {
   const [showInstallments, setShowInstallments] = useState(true);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [totals, setTotals] = useState({ payment: 0, amortization: 0, interest: 0 });
+  const [showNotification, setShowNotification] = useState(false);
 
-  const financedAmount = Number(financingAmount) - Number(downPayment);
-  const totalPurchaseAmount = Number(financingAmount); // Valor total da compra
+  const financedAmount = Number(financingAmount) / 100 - Number(downPayment) / 100;
+  const totalPurchaseAmount = Number(financingAmount) / 100;
+
+  const formatInputCurrency = (value: string) => {
+    let numericValue = value.replace(/\D/g, '');
+    const amount = parseFloat(numericValue) / 100;
+    return amount.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const handleFinancingAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setFinancingAmount(rawValue);
+  };
+
+  const handleDownPaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setDownPayment(rawValue);
+  };
 
   const calculatePrice = () => {
     const principal = financedAmount;
@@ -33,7 +54,6 @@ export default function PriceSimulation() {
     const term = Number(months);
     const firstDate = new Date(firstPaymentDate);
     
-    // Cálculo da parcela usando a fórmula Price
     const payment = principal * (rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1);
     
     let currentBalance = principal;
@@ -83,14 +103,14 @@ export default function PriceSimulation() {
       id: Date.now().toString(),
       type: 'PRICE' as const,
       date: new Date().toLocaleDateString('pt-BR'),
-      financingAmount: Number(financingAmount),
-      downPayment: Number(downPayment),
+      financingAmount: Number(financingAmount) / 100,
+      downPayment: Number(downPayment) / 100,
       months: Number(months),
       monthlyRate: Number(monthlyRate),
       bank,
       firstPayment: installments[0].payment,
       lastPayment: installments[installments.length - 1].payment,
-      totalAmount: totals.payment + Number(downPayment), // Incluindo a entrada no valor total
+      totalAmount: totals.payment + Number(downPayment) / 100,
       totalInterest: totals.interest,
       installments: installments
     };
@@ -99,7 +119,20 @@ export default function PriceSimulation() {
     const simulations = savedSimulations ? JSON.parse(savedSimulations) : [];
     simulations.push(simulation);
     localStorage.setItem('simulations', JSON.stringify(simulations));
-    alert('Simulação salva com sucesso!');
+    
+    setFinancingAmount('');
+    setDownPayment('');
+    setOperationDate('');
+    setFirstPaymentDate('');
+    setMonths('');
+    setMonthlyRate('');
+    setYearlyRate('');
+    setBank('');
+    setShowResults(false);
+    setShowInstallments(true);
+    setInstallments([]);
+    setTotals({ payment: 0, amortization: 0, interest: 0 });
+    setShowNotification(true);
   };
 
   const toggleInstallments = () => {
@@ -127,6 +160,13 @@ export default function PriceSimulation() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {showNotification && (
+        <Notification
+          message="Simulação salva com sucesso!"
+          onClose={() => setShowNotification(false)}
+        />
+      )}
+
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Tabela Price</h2>
         <p className="text-gray-600">
@@ -147,9 +187,9 @@ export default function PriceSimulation() {
                 Valor Total do Bem
               </label>
               <input
-                type="number"
-                value={financingAmount}
-                onChange={(e) => setFinancingAmount(e.target.value)}
+                type="text"
+                value={formatInputCurrency(financingAmount)}
+                onChange={handleFinancingAmountChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="R$ 0,00"
               />
@@ -159,9 +199,9 @@ export default function PriceSimulation() {
                 Valor da Entrada
               </label>
               <input
-                type="number"
-                value={downPayment}
-                onChange={(e) => setDownPayment(e.target.value)}
+                type="text"
+                value={formatInputCurrency(downPayment)}
+                onChange={handleDownPaymentChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="R$ 0,00"
               />
@@ -204,9 +244,9 @@ export default function PriceSimulation() {
                 Prazo (meses)
               </label>
               <input
-                type="number"
+                type="text"
                 value={months}
-                onChange={(e) => setMonths(e.target.value)}
+                onChange={(e) => setMonths(e.target.value.replace(/\D/g, ''))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0"
               />
@@ -216,12 +256,11 @@ export default function PriceSimulation() {
                 Taxa de Juros Mensal (%)
               </label>
               <input
-                type="number"
+                type="text"
                 value={monthlyRate}
                 onChange={handleMonthlyRateChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
-                step="0.01"
               />
             </div>
             <div>
@@ -229,12 +268,11 @@ export default function PriceSimulation() {
                 Taxa de Juros Anual (%)
               </label>
               <input
-                type="number"
+                type="text"
                 value={yearlyRate}
                 onChange={handleYearlyRateChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
-                step="0.01"
               />
             </div>
             <div>
@@ -282,7 +320,7 @@ export default function PriceSimulation() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Valor da Entrada:</span>
-                      <span className="font-medium text-green-600">{formatCurrency(Number(downPayment))}</span>
+                      <span className="font-medium text-green-600">{formatCurrency(Number(downPayment) / 100)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Valor Financiado:</span>
@@ -303,7 +341,7 @@ export default function PriceSimulation() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Custo Total (com entrada):</span>
-                      <span className="font-medium">{formatCurrency(totals.payment + Number(downPayment))}</span>
+                      <span className="font-medium">{formatCurrency(totals.payment + Number(downPayment) / 100)}</span>
                     </div>
                   </div>
                 </div>

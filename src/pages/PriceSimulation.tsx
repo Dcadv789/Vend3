@@ -25,6 +25,7 @@ export default function PriceSimulation() {
   const [totals, setTotals] = useState({ payment: 0, amortization: 0, interest: 0 });
 
   const financedAmount = Number(financingAmount) - Number(downPayment);
+  const totalPurchaseAmount = Number(financingAmount); // Valor total da compra
 
   const calculatePrice = () => {
     const principal = financedAmount;
@@ -89,7 +90,7 @@ export default function PriceSimulation() {
       bank,
       firstPayment: installments[0].payment,
       lastPayment: installments[installments.length - 1].payment,
-      totalAmount: totals.payment,
+      totalAmount: totals.payment + Number(downPayment), // Incluindo a entrada no valor total
       totalInterest: totals.interest,
       installments: installments
     };
@@ -143,7 +144,7 @@ export default function PriceSimulation() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valor do Financiamento
+                Valor Total do Bem
               </label>
               <input
                 type="number"
@@ -155,7 +156,7 @@ export default function PriceSimulation() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Entrada
+                Valor da Entrada
               </label>
               <input
                 type="number"
@@ -167,7 +168,7 @@ export default function PriceSimulation() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Saldo a Financiar
+                Valor a Financiar
               </label>
               <input
                 type="text"
@@ -271,30 +272,60 @@ export default function PriceSimulation() {
                   Detalhamento da simulação do financiamento
                 </p>
               </div>
-              <div className="grid grid-cols-5 gap-4">
-                <div className="bg-blue-600 p-4 rounded-xl text-white">
-                  <p className="text-sm font-medium mb-1 opacity-90">Valor Total</p>
-                  <p className="text-lg font-semibold">{formatCurrency(totals.payment)}</p>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Valores da Compra</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Valor Total do Bem:</span>
+                      <span className="font-medium">{formatCurrency(totalPurchaseAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Valor da Entrada:</span>
+                      <span className="font-medium text-green-600">{formatCurrency(Number(downPayment))}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Valor Financiado:</span>
+                      <span className="font-medium">{formatCurrency(financedAmount)}</span>
+                    </div>
+                  </div>
                 </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Custos do Financiamento</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Total de Juros:</span>
+                      <span className="font-medium text-red-600">{formatCurrency(totals.interest)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Custo Total do Financiamento:</span>
+                      <span className="font-medium">{formatCurrency(totals.payment)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Custo Total (com entrada):</span>
+                      <span className="font-medium">{formatCurrency(totals.payment + Number(downPayment))}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
                 <div className="bg-blue-600 p-4 rounded-xl text-white">
-                  <p className="text-sm font-medium mb-1 opacity-90">Total de Juros</p>
-                  <p className="text-lg font-semibold">{formatCurrency(totals.interest)}</p>
+                  <p className="text-sm font-medium mb-1 opacity-90">Parcela Fixa</p>
+                  <p className="text-lg font-semibold">
+                    {installments.length > 0 ? formatCurrency(installments[0].payment) : '-'}
+                  </p>
                 </div>
                 <div className="bg-blue-600 p-4 rounded-xl text-white">
                   <p className="text-sm font-medium mb-1 opacity-90">Total Amortizado</p>
                   <p className="text-lg font-semibold">{formatCurrency(totals.amortization)}</p>
                 </div>
                 <div className="bg-blue-600 p-4 rounded-xl text-white">
-                  <p className="text-sm font-medium mb-1 opacity-90">Primeira Parcela</p>
-                  <p className="text-lg font-semibold">
-                    {installments.length > 0 ? formatCurrency(installments[0].payment) : '-'}
-                  </p>
+                  <p className="text-sm font-medium mb-1 opacity-90">Prazo</p>
+                  <p className="text-lg font-semibold">{months} meses</p>
                 </div>
                 <div className="bg-blue-600 p-4 rounded-xl text-white">
-                  <p className="text-sm font-medium mb-1 opacity-90">Última Parcela</p>
-                  <p className="text-lg font-semibold">
-                    {installments.length > 0 ? formatCurrency(installments[installments.length - 1].payment) : '-'}
-                  </p>
+                  <p className="text-sm font-medium mb-1 opacity-90">Taxa Efetiva Anual</p>
+                  <p className="text-lg font-semibold">{yearlyRate}%</p>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { History, Trash2, Eye, EyeOff } from 'lucide-react';
+import { History, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
 
 interface SavedSimulation {
   id: string;
@@ -31,6 +31,12 @@ interface NotificationProps {
   onClose: () => void;
 }
 
+interface EarlyPayment {
+  date: string;
+  amount: number;
+  reduceInstallment: boolean;
+}
+
 function Notification({ message, onClose }: NotificationProps) {
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,10 +58,130 @@ function Notification({ message, onClose }: NotificationProps) {
   );
 }
 
-type FilterType = 'ALL' | 'SAC' | 'PRICE';
+function EarlyPaymentModal({ 
+  onClose, 
+  onConfirm, 
+  currentBalance 
+}: { 
+  onClose: () => void; 
+  onConfirm: (payment: EarlyPayment) => void;
+  currentBalance: number;
+}) {
+  const [date, setDate] = useState('');
+  const [amount, setAmount] = useState('');
+  const [reduceInstallment, setReduceInstallment] = useState(true);
 
-function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation; onClose: () => void }) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!date || !amount) return;
+
+    onConfirm({
+      date,
+      amount: Number(amount),
+      reduceInstallment
+    });
+  };
+
+  const formatCurrency = (value: string) => {
+    if (!value) return '';
+    const onlyNumbers = value.replace(/\D/g, '');
+    const amount = Number(onlyNumbers) / 100;
+    return amount.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setAmount(rawValue);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">
+          Adicionar Pagamento Antecipado
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Data do Pagamento
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Valor do Pagamento
+            </label>
+            <input
+              type="text"
+              value={formatCurrency(amount)}
+              onChange={handleAmountChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="R$ 0,00"
+              required
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Saldo devedor atual: {formatCurrency(String(currentBalance * 100))}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="radio"
+              id="reduceInstallment"
+              checked={reduceInstallment}
+              onChange={() => setReduceInstallment(true)}
+              className="text-blue-600"
+            />
+            <label htmlFor="reduceInstallment" className="text-sm text-gray-700">
+              Reduzir valor das parcelas
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="radio"
+              id="reduceTerm"
+              checked={!reduceInstallment}
+              onChange={() => setReduceInstallment(false)}
+              className="text-blue-600"
+            />
+            <label htmlFor="reduceTerm" className="text-sm text-gray-700">
+              Reduzir prazo
+            </label>
+          </div>
+          <div className="flex justify-end space-x-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Confirmar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function SimulationModal({ simulation: initialSimulation, onClose }: { simulation: SavedSimulation; onClose: () => void }) {
   const [showInstallments, setShowInstallments] = useState(true);
+  const [showEarlyPaymentModal, setShowEarlyPaymentModal] = useState(false);
+  const [simulation, setSimulation] = useState(initialSimulation);
+  const [earlyPayments, setEarlyPayments] = useState<EarlyPayment[]>([]);
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
@@ -64,9 +190,63 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
     });
   };
 
+  const recalculateInstallments = (payment: EarlyPayment) => {
+    const newInstallments = [...simulation.installments];
+    const paymentDate = new Date(payment.date);
+    let appliedPayment = false;
+    let remainingAmount = payment.amount;
+
+    for (let i = 0; i < newInstallments.length; i++) {
+      const installmentDate = new Date(newInstallments[i].date.split('/').reverse().join('-'));
+      
+      if (installmentDate >= paymentDate && !appliedPayment) {
+        newInstallments[i].balance -= remainingAmount;
+        appliedPayment = true;
+      }
+
+      if (appliedPayment) {
+        const interest = newInstallments[i].balance * (simulation.monthlyRate / 100);
+        
+        if (payment.reduceInstallment) {
+          const remainingInstallments = simulation.months - i;
+          const amortization = newInstallments[i].balance / remainingInstallments;
+          newInstallments[i].payment = amortization + interest;
+          newInstallments[i].amortization = amortization;
+        } else {
+          newInstallments[i].interest = interest;
+          newInstallments[i].payment = newInstallments[i].amortization + interest;
+        }
+
+        if (i < newInstallments.length - 1) {
+          newInstallments[i + 1].balance = newInstallments[i].balance - newInstallments[i].amortization;
+        }
+      }
+    }
+
+    const totalPayment = newInstallments.reduce((sum, inst) => sum + inst.payment, 0);
+    const totalInterest = newInstallments.reduce((sum, inst) => sum + inst.interest, 0);
+
+    setSimulation({
+      ...simulation,
+      installments: newInstallments,
+      totalAmount: totalPayment + simulation.downPayment,
+      totalInterest,
+      firstPayment: newInstallments[0].payment,
+      lastPayment: newInstallments[newInstallments.length - 1].payment
+    });
+
+    setEarlyPayments([...earlyPayments, payment]);
+  };
+
+  const handleEarlyPayment = (payment: EarlyPayment) => {
+    recalculateInstallments(payment);
+    setShowEarlyPaymentModal(false);
+  };
+
   const hasInstallments = simulation.installments && simulation.installments.length > 0;
   const totalPurchaseAmount = simulation.financingAmount;
   const financedAmount = simulation.financingAmount - simulation.downPayment;
+  const currentBalance = hasInstallments ? simulation.installments[0].balance : 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -76,12 +256,21 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
             <h3 className="text-2xl font-bold text-gray-800">
               Detalhes da Simulação
             </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEarlyPaymentModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                <Plus size={16} className="mr-2" />
+                Pagamento Antecipado
+              </button>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
@@ -143,6 +332,25 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
               <p className="text-lg font-semibold">{simulation.type}</p>
             </div>
           </div>
+
+          {earlyPayments.length > 0 && (
+            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Pagamentos Antecipados</h4>
+              <div className="space-y-2">
+                {earlyPayments.map((payment, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-gray-600">
+                      Pagamento em {new Date(payment.date).toLocaleDateString('pt-BR')}:
+                    </span>
+                    <span className="font-medium text-green-600">
+                      {formatCurrency(payment.amount)}
+                      {payment.reduceInstallment ? ' (Redução de parcela)' : ' (Redução de prazo)'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between items-center">
             <h4 className="text-lg font-semibold text-gray-800">Parcelas</h4>
@@ -222,9 +430,19 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
           </div>
         )}
       </div>
+
+      {showEarlyPaymentModal && (
+        <EarlyPaymentModal
+          onClose={() => setShowEarlyPaymentModal(false)}
+          onConfirm={handleEarlyPayment}
+          currentBalance={currentBalance}
+        />
+      )}
     </div>
   );
 }
+
+type FilterType = 'ALL' | 'SAC' | 'PRICE';
 
 function SimulationHistory() {
   const [simulations, setSimulations] = React.useState<SavedSimulation[]>([]);

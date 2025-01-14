@@ -26,6 +26,32 @@ interface Installment {
   balance: number;
 }
 
+interface NotificationProps {
+  message: string;
+  onClose: () => void;
+}
+
+function Notification({ message, onClose }: NotificationProps) {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 transform transition-all animate-fade-in">
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse"></div>
+          <p className="text-gray-800 font-medium">{message}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type FilterType = 'ALL' | 'SAC' | 'PRICE';
 
 function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation; onClose: () => void }) {
@@ -39,11 +65,12 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
   };
 
   const hasInstallments = simulation.installments && simulation.installments.length > 0;
+  const totalPurchaseAmount = simulation.financingAmount;
+  const financedAmount = simulation.financingAmount - simulation.downPayment;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full h-[90vh] flex flex-col">
-        {/* Cabeçalho e Resumo Fixo */}
         <div className="p-6 space-y-6 flex-shrink-0">
           <div className="flex justify-between items-center">
             <h3 className="text-2xl font-bold text-gray-800">
@@ -57,19 +84,44 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
             </button>
           </div>
 
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Valores da Compra</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Valor Total do Bem:</span>
+                  <span className="font-medium">{formatCurrency(totalPurchaseAmount)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Valor da Entrada:</span>
+                  <span className="font-medium text-green-600">{formatCurrency(simulation.downPayment)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Valor Financiado:</span>
+                  <span className="font-medium">{formatCurrency(financedAmount)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Custos do Financiamento</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total de Juros:</span>
+                  <span className="font-medium text-red-600">{formatCurrency(simulation.totalInterest)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Custo Total do Financiamento:</span>
+                  <span className="font-medium">{formatCurrency(simulation.totalAmount - simulation.downPayment)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Custo Total (com entrada):</span>
+                  <span className="font-medium">{formatCurrency(simulation.totalAmount)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-5 gap-4">
-            <div className="bg-blue-600 p-4 rounded-xl text-white">
-              <p className="text-sm font-medium mb-1 opacity-90">Valor Total</p>
-              <p className="text-lg font-semibold">{formatCurrency(simulation.totalAmount)}</p>
-            </div>
-            <div className="bg-blue-600 p-4 rounded-xl text-white">
-              <p className="text-sm font-medium mb-1 opacity-90">Total de Juros</p>
-              <p className="text-lg font-semibold">{formatCurrency(simulation.totalInterest)}</p>
-            </div>
-            <div className="bg-blue-600 p-4 rounded-xl text-white">
-              <p className="text-sm font-medium mb-1 opacity-90">Valor Financiado</p>
-              <p className="text-lg font-semibold">{formatCurrency(simulation.financingAmount)}</p>
-            </div>
             <div className="bg-blue-600 p-4 rounded-xl text-white">
               <p className="text-sm font-medium mb-1 opacity-90">Primeira Parcela</p>
               <p className="text-lg font-semibold">{formatCurrency(simulation.firstPayment)}</p>
@@ -78,24 +130,17 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
               <p className="text-sm font-medium mb-1 opacity-90">Última Parcela</p>
               <p className="text-lg font-semibold">{formatCurrency(simulation.lastPayment)}</p>
             </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg">
-            <div>
-              <p className="text-sm text-gray-500">Sistema</p>
-              <p className="font-medium text-gray-900">{simulation.type}</p>
+            <div className="bg-blue-600 p-4 rounded-xl text-white">
+              <p className="text-sm font-medium mb-1 opacity-90">Taxa Mensal</p>
+              <p className="text-lg font-semibold">{simulation.monthlyRate}%</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Banco</p>
-              <p className="font-medium text-gray-900">{simulation.bank || 'Não informado'}</p>
+            <div className="bg-blue-600 p-4 rounded-xl text-white">
+              <p className="text-sm font-medium mb-1 opacity-90">Prazo</p>
+              <p className="text-lg font-semibold">{simulation.months} meses</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Taxa Mensal</p>
-              <p className="font-medium text-gray-900">{simulation.monthlyRate}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Prazo</p>
-              <p className="font-medium text-gray-900">{simulation.months} meses</p>
+            <div className="bg-blue-600 p-4 rounded-xl text-white">
+              <p className="text-sm font-medium mb-1 opacity-90">Sistema</p>
+              <p className="text-lg font-semibold">{simulation.type}</p>
             </div>
           </div>
 
@@ -122,7 +167,6 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
           </div>
         </div>
 
-        {/* Área da Tabela com Rolagem */}
         {hasInstallments && showInstallments && (
           <div className="flex-1 overflow-hidden px-6 pb-6">
             <div className="h-full overflow-auto rounded-xl border border-gray-200">
@@ -186,6 +230,7 @@ function SimulationHistory() {
   const [simulations, setSimulations] = React.useState<SavedSimulation[]>([]);
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [selectedSimulation, setSelectedSimulation] = useState<SavedSimulation | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
 
   React.useEffect(() => {
     const savedSimulations = localStorage.getItem('simulations');
@@ -198,6 +243,7 @@ function SimulationHistory() {
     const updatedSimulations = simulations.filter(sim => sim.id !== id);
     setSimulations(updatedSimulations);
     localStorage.setItem('simulations', JSON.stringify(updatedSimulations));
+    setShowNotification(true);
   };
 
   const formatCurrency = (value: number) => {
@@ -230,6 +276,13 @@ function SimulationHistory() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {showNotification && (
+        <Notification
+          message="Simulação excluída com sucesso!"
+          onClose={() => setShowNotification(false)}
+        />
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Simulações Salvas</h2>
         <div className="flex gap-2">
@@ -284,6 +337,9 @@ function SimulationHistory() {
                   Valor Financiado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Entrada
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Prazo
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -317,6 +373,9 @@ function SimulationHistory() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatCurrency(simulation.financingAmount)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatCurrency(simulation.downPayment)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {simulation.months} meses

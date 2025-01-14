@@ -15,7 +15,7 @@ export function Notification({ message, onClose }: NotificationProps) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
       <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 transform transition-all animate-fade-in">
         <div className="flex items-center justify-center space-x-2">
           <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse"></div>

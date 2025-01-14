@@ -38,13 +38,13 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
     });
   };
 
-  // Add null check for installments
   const hasInstallments = simulation.installments && simulation.installments.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 space-y-6">
+      <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full h-[90vh] flex flex-col">
+        {/* Cabeçalho e Resumo Fixo */}
+        <div className="p-6 space-y-6 flex-shrink-0">
           <div className="flex justify-between items-center">
             <h3 className="text-2xl font-bold text-gray-800">
               Detalhes da Simulação
@@ -120,11 +120,14 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
               </button>
             )}
           </div>
+        </div>
 
-          {hasInstallments && showInstallments && (
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
+        {/* Área da Tabela com Rolagem */}
+        {hasInstallments && showInstallments && (
+          <div className="flex-1 overflow-hidden px-6 pb-6">
+            <div className="h-full overflow-auto rounded-xl border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 sticky top-0">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Nº
@@ -172,8 +175,8 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

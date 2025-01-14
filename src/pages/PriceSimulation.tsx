@@ -10,7 +10,7 @@ interface Installment {
   balance: number;
 }
 
-function PriceSimulation() {
+export default function PriceSimulation() {
   const [financingAmount, setFinancingAmount] = useState('');
   const [downPayment, setDownPayment] = useState('');
   const [operationDate, setOperationDate] = useState('');
@@ -396,5 +396,3 @@ function PriceSimulation() {
     </div>
   );
 }
-
-export default PriceSimulation;

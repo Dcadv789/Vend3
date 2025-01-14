@@ -38,6 +38,9 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
     });
   };
 
+  // Add null check for installments
+  const hasInstallments = simulation.installments && simulation.installments.length > 0;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
@@ -98,25 +101,27 @@ function SimulationModal({ simulation, onClose }: { simulation: SavedSimulation;
 
           <div className="flex justify-between items-center">
             <h4 className="text-lg font-semibold text-gray-800">Parcelas</h4>
-            <button
-              onClick={() => setShowInstallments(!showInstallments)}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-            >
-              {showInstallments ? (
-                <>
-                  <EyeOff size={16} className="mr-2" />
-                  Ocultar Parcelas
-                </>
-              ) : (
-                <>
-                  <Eye size={16} className="mr-2" />
-                  Exibir Parcelas
-                </>
-              )}
-            </button>
+            {hasInstallments && (
+              <button
+                onClick={() => setShowInstallments(!showInstallments)}
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+              >
+                {showInstallments ? (
+                  <>
+                    <EyeOff size={16} className="mr-2" />
+                    Ocultar Parcelas
+                  </>
+                ) : (
+                  <>
+                    <Eye size={16} className="mr-2" />
+                    Exibir Parcelas
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
-          {showInstallments && (
+          {hasInstallments && showInstallments && (
             <div className="overflow-x-auto rounded-xl border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">

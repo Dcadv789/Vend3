@@ -10,7 +10,7 @@ interface Installment {
   balance: number;
 }
 
-function SACSimulation() {
+export default function SACSimulation() {
   const [financingAmount, setFinancingAmount] = useState('');
   const [downPayment, setDownPayment] = useState('');
   const [operationDate, setOperationDate] = useState('');
@@ -298,7 +298,7 @@ function SACSimulation() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-m d border border-gray-200">
             <div className="p-6">
               <div className="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
                 <button
@@ -394,5 +394,3 @@ function SACSimulation() {
     </div>
   );
 }
-
-export default SACSimulation;

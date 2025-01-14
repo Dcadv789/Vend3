@@ -12,10 +12,15 @@ interface Installment {
 }
 
 export default function PriceSimulation() {
+  const today = new Date().toISOString().split('T')[0];
+  const nextMonth = new Date();
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  const defaultFirstPayment = nextMonth.toISOString().split('T')[0];
+
   const [financingAmount, setFinancingAmount] = useState('');
   const [downPayment, setDownPayment] = useState('');
-  const [operationDate, setOperationDate] = useState('');
-  const [firstPaymentDate, setFirstPaymentDate] = useState('');
+  const [operationDate, setOperationDate] = useState(today);
+  const [firstPaymentDate, setFirstPaymentDate] = useState(defaultFirstPayment);
   const [months, setMonths] = useState('');
   const [monthlyRate, setMonthlyRate] = useState('');
   const [yearlyRate, setYearlyRate] = useState('');
@@ -30,11 +35,12 @@ export default function PriceSimulation() {
   const totalPurchaseAmount = Number(financingAmount) / 100;
 
   const formatInputCurrency = (value: string) => {
+    if (!value) return 'R$ 0,00';
     let numericValue = value.replace(/\D/g, '');
     const amount = parseFloat(numericValue) / 100;
     return amount.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      style: 'currency',
+      currency: 'BRL'
     });
   };
 
@@ -122,8 +128,8 @@ export default function PriceSimulation() {
     
     setFinancingAmount('');
     setDownPayment('');
-    setOperationDate('');
-    setFirstPaymentDate('');
+    setOperationDate(today);
+    setFirstPaymentDate(defaultFirstPayment);
     setMonths('');
     setMonthlyRate('');
     setYearlyRate('');

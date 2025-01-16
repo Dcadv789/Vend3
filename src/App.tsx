@@ -5,6 +5,8 @@ import SACSimulation from './pages/SACSimulation';
 import PriceSimulation from './pages/PriceSimulation';
 import SimulationHistory from './pages/SimulationHistory';
 import Comparison from './pages/Comparison';
+import ProLabore from './pages/ProLabore';
+import ProLaboreTemplate from './pages/ProLaboreTemplate';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
             <Route path="/price" element={<PriceSimulation />} />
             <Route path="/history" element={<SimulationHistory />} />
             <Route path="/comparison" element={<Comparison />} />
+            <Route path="/pro-labore" element={<ProLabore />} />
+            <Route path="/pro-labore-template" element={<ProLaboreTemplate />} />
           </Routes>
         </main>
       </div>

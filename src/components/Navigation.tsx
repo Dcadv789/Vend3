@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calculator, History, BarChart2, GitCompare } from 'lucide-react';
+import { Calculator, History, BarChart2, GitCompare, DollarSign, Settings } from 'lucide-react';
 
 function Navigation() {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -26,11 +26,19 @@ function Navigation() {
             </NavLink>
             <NavLink to="/history" className={linkClass}>
               <History size={20} />
-              <span>Simulações Salvas</span>
+              <span>Simulações</span>
             </NavLink>
             <NavLink to="/comparison" className={linkClass}>
               <GitCompare size={20} />
               <span>Comparação</span>
+            </NavLink>
+            <NavLink to="/pro-labore" className={linkClass}>
+              <DollarSign size={20} />
+              <span>Pró-labore</span>
+            </NavLink>
+            <NavLink to="/pro-labore-template" className={linkClass}>
+              <Settings size={20} />
+              <span>Template</span>
             </NavLink>
           </div>
         </div>

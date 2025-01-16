@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Save, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Save, Plus, Trash2, ToggleLeft, ToggleRight, FileDown } from 'lucide-react';
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 import { Notification } from '../components/Notification';
 
 interface TemplateField {
@@ -10,6 +11,141 @@ interface TemplateField {
   enabled: boolean;
   group: 'faturamento' | 'custos_fixos' | 'custos_variaveis';
 }
+
+const styles = StyleSheet.create({
+  page: {
+    padding: 40,
+    fontFamily: 'Helvetica'
+  },
+  header: {
+    backgroundColor: '#1E40AF',
+    padding: 20,
+    color: '#FFFFFF',
+    marginBottom: 20
+  },
+  headerTitle: {
+    fontSize: 24,
+    marginBottom: 10
+  },
+  companyInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#60A5FA',
+    paddingBottom: 10
+  },
+  section: {
+    marginBottom: 20
+  },
+  sectionTitle: {
+    fontSize: 18,
+    color: '#1E40AF',
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 5
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8
+  },
+  label: {
+    color: '#4B5563'
+  },
+  value: {
+    color: '#111827'
+  },
+  analysis: {
+    backgroundColor: '#EFF6FF',
+    padding: 15,
+    borderRadius: 5,
+    marginTop: 20
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 40,
+    right: 40,
+    textAlign: 'center',
+    color: '#6B7280',
+    fontSize: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB'
+  }
+});
+
+const ProLaborePDF = ({ fields, groupedFields }: { fields: TemplateField[], groupedFields: Record<string, TemplateField[]> }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Relatório de Pró-labore</Text>
+        <View style={styles.companyInfo}>
+          <View>
+            <Text style={{ color: '#93C5FD', fontSize: 12, marginBottom: 4 }}>Empresa</Text>
+            <Text>Nome da Empresa</Text>
+          </View>
+          <View>
+            <Text style={{ color: '#93C5FD', fontSize: 12, marginBottom: 4 }}>CNPJ</Text>
+            <Text>00.000.000/0001-00</Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <View>
+            <Text style={{ color: '#93C5FD', fontSize: 12, marginBottom: 4 }}>Data de Emissão</Text>
+            <Text>{new Date().toLocaleDateString('pt-BR')}</Text>
+          </View>
+          <View>
+            <Text style={{ color: '#93C5FD', fontSize: 12, marginBottom: 4 }}>Hora</Text>
+            <Text>{new Date().toLocaleTimeString('pt-BR')}</Text>
+          </View>
+        </View>
+      </View>
+
+      {Object.entries(groupedFields).map(([group, groupFields]) => (
+        <View key={group} style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            {group === 'faturamento' ? 'Faturamento' :
+             group === 'custos_fixos' ? 'Custos Fixos' :
+             'Custos Variáveis'}
+          </Text>
+          {groupFields.filter(f => f.enabled).map((field) => (
+            <View key={field.id} style={styles.row}>
+              <Text style={styles.label}>{field.label}:</Text>
+              <Text style={styles.value}>
+                {field.type === 'currency' ? 'R$ 0,00' :
+                 field.type === 'number' ? '0,00%' :
+                 field.type === 'date' ? new Date().toLocaleDateString('pt-BR') :
+                 'Exemplo'}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ))}
+
+      <View style={styles.analysis}>
+        <Text style={[styles.sectionTitle, { marginBottom: 15 }]}>Análise e Recomendações</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Pró-labore Recomendado:</Text>
+          <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>R$ 0,00</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Pró-labore Máximo:</Text>
+          <Text style={{ color: '#2563EB', fontWeight: 'bold' }}>R$ 0,00</Text>
+        </View>
+        <Text style={{ color: '#4B5563', marginTop: 10 }}>
+          Com base na análise dos dados fornecidos, recomendamos manter o pró-labore dentro destes valores para garantir a saúde financeira da empresa.
+        </Text>
+      </View>
+
+      <Text style={styles.footer}>
+        DC Advisors® - Todos os direitos reservados
+      </Text>
+    </Page>
+  </Document>
+);
 
 export default function ProLaboreTemplate() {
   const [fields, setFields] = useState<TemplateField[]>([
@@ -125,13 +261,28 @@ export default function ProLaboreTemplate() {
               </div>
             ))}
 
-            <button
-              onClick={handleSaveTemplate}
-              className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Save size={20} className="mr-2" />
-              Salvar Template
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={handleSaveTemplate}
+                className="flex-1 inline-flex items-center justify-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Save size={20} className="mr-2" />
+                Salvar Template
+              </button>
+
+              <PDFDownloadLink
+                document={<ProLaborePDF fields={fields} groupedFields={groupedFields} />}
+                fileName="relatorio-pro-labore.pdf"
+                className="flex-1 inline-flex items-center justify-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                {({ loading }) => (
+                  <>
+                    <FileDown size={20} className="mr-2" />
+                    {loading ? 'Gerando PDF...' : 'Exportar PDF'}
+                  </>
+                )}
+              </PDFDownloadLink>
+            </div>
           </div>
         </div>
 
@@ -202,6 +353,10 @@ export default function ProLaboreTemplate() {
                       Com base na análise dos dados fornecidos, recomendamos manter o pró-labore dentro destes valores para garantir a saúde financeira da empresa.
                     </p>
                   </div>
+                </div>
+
+                <div className="absolute bottom-8 left-0 right-0 text-center text-gray-500 text-sm border-t border-gray-200 pt-4">
+                  DC Advisors® - Todos os direitos reservados
                 </div>
               </div>
             </div>

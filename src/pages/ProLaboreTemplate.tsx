@@ -43,12 +43,22 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     color: '#93C5FD',
-    fontSize: 12,
+    fontSize: 10,
     marginBottom: 2
   },
   headerValue: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: 'bold'
+  },
+  headerDateLabel: {
+    color: '#93C5FD',
+    fontSize: 8,
+    marginBottom: 1
+  },
+  headerDateValue: {
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: 'bold'
   },
   headerDivider: {
@@ -99,21 +109,61 @@ const styles = StyleSheet.create({
     textAlign: 'right'
   },
   analysis: {
-    backgroundColor: '#EFF6FF',
     padding: 12,
     marginBottom: 15,
     borderRadius: 4
   },
+  analysisGreen: {
+    backgroundColor: '#DCFCE7',
+  },
+  analysisYellow: {
+    backgroundColor: '#FEF9C3',
+  },
+  analysisRed: {
+    backgroundColor: '#FEE2E2',
+  },
   analysisTitle: {
     fontSize: 16,
-    color: '#1E40AF',
-    marginBottom: 8
+    marginBottom: 8,
+    fontWeight: 'bold'
+  },
+  analysisTitleGreen: {
+    color: '#166534',
+  },
+  analysisTitleYellow: {
+    color: '#854D0E',
+  },
+  analysisTitleRed: {
+    color: '#991B1B',
   },
   analysisText: {
     fontSize: 12,
-    color: '#334155',
     marginBottom: 8,
     lineHeight: 1.4
+  },
+  analysisTextGreen: {
+    color: '#166534',
+  },
+  analysisTextYellow: {
+    color: '#854D0E',
+  },
+  analysisTextRed: {
+    color: '#991B1B',
+  },
+  recommendedValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 8,
+    marginBottom: 4
+  },
+  recommendedValueGreen: {
+    color: '#166534',
+  },
+  recommendedValueYellow: {
+    color: '#854D0E',
+  },
+  recommendedValueRed: {
+    color: '#991B1B',
   },
   footer: {
     position: 'absolute',
@@ -138,14 +188,23 @@ const ProLaborePDF = ({ fields, groupedFields, companyName, cnpj, lastCalculatio
 }) => {
   const getDiagnosisInfo = (current: number, recommended: number, maximum: number) => {
     if (current <= recommended) {
-      return 'O valor atual do pró-labore está adequado à realidade financeira da empresa';
+      return {
+        text: 'O valor atual do pró-labore está adequado à realidade financeira da empresa',
+        color: 'green'
+      };
     }
     
     if (current <= maximum) {
-      return `O valor atual do Pró-labore está adequado à realidade financeira da empresa, mas próximo do limite, o que é arriscado. Garanta uma reserva financeira mínima de ${(lastCalculation?.monthlyFixedCosts * 12).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+      return {
+        text: `O valor atual do Pró-labore está adequado à realidade financeira da empresa, mas próximo do limite, o que é arriscado. Garanta uma reserva financeira mínima de ${(lastCalculation?.monthlyFixedCosts * 12).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
+        color: 'yellow'
+      };
     }
     
-    return 'Considere ajustar o valor do pró-labore para garantir a saúde financeira da empresa';
+    return {
+      text: 'Considere ajustar o valor do pró-labore para garantir a saúde financeira da empresa',
+      color: 'red'
+    };
   };
 
   const diagnosis = getDiagnosisInfo(
@@ -153,6 +212,17 @@ const ProLaborePDF = ({ fields, groupedFields, companyName, cnpj, lastCalculatio
     (lastCalculation?.maximumRecommended || 0) * 0.7,
     lastCalculation?.maximumRecommended || 0
   );
+
+  const getAnalysisStyle = (color: string) => {
+    return {
+      analysis: [styles.analysis, color === 'green' ? styles.analysisGreen : color === 'yellow' ? styles.analysisYellow : styles.analysisRed],
+      title: [styles.analysisTitle, color === 'green' ? styles.analysisTitleGreen : color === 'yellow' ? styles.analysisTitleYellow : styles.analysisTitleRed],
+      text: [styles.analysisText, color === 'green' ? styles.analysisTextGreen : color === 'yellow' ? styles.analysisTextYellow : styles.analysisTextRed],
+      value: [styles.recommendedValue, color === 'green' ? styles.recommendedValueGreen : color === 'yellow' ? styles.recommendedValueYellow : styles.recommendedValueRed]
+    };
+  };
+
+  const analysisStyle = getAnalysisStyle(diagnosis.color);
 
   return (
     <Document>
@@ -176,14 +246,14 @@ const ProLaborePDF = ({ fields, groupedFields, companyName, cnpj, lastCalculatio
 
             <View style={styles.headerRow}>
               <View style={styles.headerColumn}>
-                <Text style={styles.headerLabel}>Data</Text>
-                <Text style={styles.headerValue}>
+                <Text style={styles.headerDateLabel}>Data</Text>
+                <Text style={styles.headerDateValue}>
                   {new Date().toLocaleDateString('pt-BR')}
                 </Text>
               </View>
               <View style={styles.headerColumn}>
-                <Text style={styles.headerLabel}>Horário</Text>
-                <Text style={styles.headerValue}>
+                <Text style={styles.headerDateLabel}>Horário</Text>
+                <Text style={styles.headerDateValue}>
                   {new Date().toLocaleTimeString('pt-BR', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -198,33 +268,27 @@ const ProLaborePDF = ({ fields, groupedFields, companyName, cnpj, lastCalculatio
         </View>
 
         <View style={styles.content}>
-          <View style={styles.analysis}>
-            <Text style={styles.analysisTitle}>Análise e Recomendações</Text>
-            <Text style={styles.analysisText}>{diagnosis}</Text>
-            <View style={styles.row}>
-              <Text style={styles.label}>Pró-labore Recomendado:</Text>
-              <Text style={styles.value}>
-                {lastCalculation ? 
-                  (lastCalculation.maximumRecommended * 0.7).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }) : 
-                  'R$ 0,00'
-                }
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Pró-labore Máximo:</Text>
-              <Text style={styles.value}>
-                {lastCalculation ? 
-                  lastCalculation.maximumRecommended.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }) : 
-                  'R$ 0,00'
-                }
-              </Text>
-            </View>
+          <View style={analysisStyle.analysis}>
+            <Text style={analysisStyle.title}>Análise e Recomendações</Text>
+            <Text style={analysisStyle.text}>{diagnosis.text}</Text>
+            <Text style={analysisStyle.value}>
+              Pró-labore Recomendado: {lastCalculation ? 
+                (lastCalculation.maximumRecommended * 0.7).toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }) : 
+                'R$ 0,00'
+              }
+            </Text>
+            <Text style={analysisStyle.value}>
+              Pró-labore Máximo: {lastCalculation ? 
+                lastCalculation.maximumRecommended.toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }) : 
+                'R$ 0,00'
+              }
+            </Text>
           </View>
 
           {Object.entries(groupedFields).map(([group, groupFields]) => (
@@ -352,6 +416,42 @@ export default function ProLaboreTemplate() {
     if (!lastCalculation?.revenue) return 0;
     return Object.values(lastCalculation.revenue).reduce((a: number, b: number) => a + b, 0);
   };
+
+  const getDiagnosisInfo = (current: number, recommended: number, maximum: number) => {
+    if (current <= recommended) {
+      return {
+        text: 'O valor atual do pró-labore está adequado à realidade financeira da empresa',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        textColor: 'text-green-800',
+        borderColor: 'border-green-200'
+      };
+    }
+    
+    if (current <= maximum) {
+      return {
+        text: `O valor atual do Pró-labore está adequado à realidade financeira da empresa, mas próximo do limite, o que é arriscado. Garanta uma reserva financeira mínima de ${formatCurrency(lastCalculation?.monthlyFixedCosts * 12)}`,
+        color: 'yellow',
+        bgColor: 'bg-yellow-50',
+        textColor: 'text-yellow-800',
+        borderColor: 'border-yellow-200'
+      };
+    }
+    
+    return {
+      text: 'Considere ajustar o valor do pró-labore para garantir a saúde financeira da empresa',
+      color: 'red',
+      bgColor: 'bg-red-50',
+      textColor: 'text-red-800',
+      borderColor: 'border-red-200'
+    };
+  };
+
+  const diagnosis = lastCalculation ? getDiagnosisInfo(
+    lastCalculation.currentProLabore,
+    lastCalculation.maximumRecommended * 0.7,
+    lastCalculation.maximumRecommended
+  ) : null;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -496,12 +596,12 @@ export default function ProLaboreTemplate() {
 
                     <div className="flex gap-12">
                       <div>
-                        <span className="text-blue-200 block mb-1 text-xs">Data</span>
-                        <span className="font-medium text-white text-base">{new Date().toLocaleDateString('pt-BR')}</span>
+                        <span className="text-blue-200 block mb-1 text-[10px]">Data</span>
+                        <span className="font-medium text-white text-sm">{new Date().toLocaleDateString('pt-BR')}</span>
                       </div>
                       <div>
-                        <span className="text-blue-200 block mb-1 text-xs">Horário</span>
-                        <span className="font-medium text-white text-base">
+                        <span className="text-blue-200 block mb-1 text-[10px]">Horário</span>
+                        <span className="font-medium text-white text-sm">
                           {new Date().toLocaleTimeString('pt-BR', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -519,39 +619,32 @@ export default function ProLaboreTemplate() {
               </div>
 
               <div className="p-5 space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h2 className="text-lg font-bold text-blue-800 mb-2">Análise e Recomendações</h2>
-                  <p className="text-sm text-gray-700 mb-4">
-                    {lastCalculation ? 
-                      (lastCalculation.currentProLabore <= lastCalculation.maximumRecommended * 0.7 ?
-                        'O valor atual do pró-labore está adequado à realidade financeira da empresa' :
-                        lastCalculation.currentProLabore <= lastCalculation.maximumRecommended ?
-                        `O valor atual do Pró-labore está adequado à realidade financeira da empresa, mas próximo do limite, o que é arriscado. Garanta uma reserva financeira mínima de ${formatCurrency(lastCalculation.monthlyFixedCosts * 12)}` :
-                        'Considere ajustar o valor do pró-labore para garantir a saúde financeira da empresa'
-                      ) : 'Análise não disponível'
-                    }
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Pró-labore Recomendado:</span>
-                      <span className="font-bold text-blue-600">
-                        {lastCalculation ? 
-                          formatCurrency(lastCalculation.maximumRecommended * 0.7) : 
-                          'R$ 0,00'
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Pró-labore Máximo:</span>
-                      <span className="font-bold text-blue-600">
-                        {lastCalculation ? 
-                          formatCurrency(lastCalculation.maximumRecommended) : 
-                          'R$ 0,00'
-                        }
-                      </span>
+                {diagnosis && (
+                  <div className={`p-4 rounded-lg ${diagnosis.bgColor} border ${diagnosis.borderColor}`}>
+                    <h2 className={`text-lg font-bold ${diagnosis.textColor} mb-2`}>Análise e Recomendações</h2>
+                    <p className={`text-sm ${diagnosis.textColor} mb-4`}>{diagnosis.text}</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className={diagnosis.textColor}>Pró-labore Recomendado:</span>
+                        <span className={`font-bold ${diagnosis.textColor}`}>
+                          {lastCalculation ? 
+                            formatCurrency(lastCalculation.maximumRecommended * 0.7) : 
+                            'R$ 0,00'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={diagnosis.textColor}>Pró-labore Máximo:</span>
+                        <span className={`font-bold ${diagnosis.textColor}`}>
+                          {lastCalculation ? 
+                            formatCurrency(lastCalculation.maximumRecommended) : 
+                            'R$ 0,00'
+                          }
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-4">
                   {Object.entries(groupedFields).map(([group, groupFields]) => (

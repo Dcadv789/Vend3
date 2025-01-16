@@ -43,12 +43,20 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     color: '#93C5FD',
-    fontSize: 14,
-    marginBottom: 4
+    fontSize: 12,
+    marginBottom: 2
   },
   headerValue: {
     color: '#FFFFFF',
-    fontSize: 14
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  headerDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#93C5FD',
+    opacity: 0.3,
+    marginVertical: 12,
+    marginHorizontal: 4
   },
   headerLogo: {
     width: 80,
@@ -101,6 +109,12 @@ const styles = StyleSheet.create({
     color: '#1E40AF',
     marginBottom: 8
   },
+  analysisText: {
+    fontSize: 12,
+    color: '#334155',
+    marginBottom: 8,
+    lineHeight: 1.4
+  },
   footer: {
     position: 'absolute',
     bottom: 30,
@@ -121,115 +135,138 @@ const ProLaborePDF = ({ fields, groupedFields, companyName, cnpj, lastCalculatio
   companyName: string,
   cnpj: string,
   lastCalculation: any
-}) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Relatório de Pró-labore</Text>
-          
-          <View style={styles.headerRow}>
-            <View style={styles.headerColumn}>
-              <Text style={styles.headerLabel}>Empresa</Text>
-              <Text style={styles.headerValue}>{companyName || 'Nome da Empresa'}</Text>
-            </View>
-            <View style={styles.headerColumn}>
-              <Text style={styles.headerLabel}>CNPJ</Text>
-              <Text style={styles.headerValue}>{cnpj || '00.000.000/0001-00'}</Text>
-            </View>
-          </View>
+}) => {
+  const getDiagnosisInfo = (current: number, recommended: number, maximum: number) => {
+    if (current <= recommended) {
+      return 'O valor atual do pró-labore está adequado à realidade financeira da empresa';
+    }
+    
+    if (current <= maximum) {
+      return `O valor atual do Pró-labore está adequado à realidade financeira da empresa, mas próximo do limite, o que é arriscado. Garanta uma reserva financeira mínima de ${(lastCalculation?.monthlyFixedCosts * 12).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+    }
+    
+    return 'Considere ajustar o valor do pró-labore para garantir a saúde financeira da empresa';
+  };
 
-          <View style={styles.headerRow}>
-            <View style={styles.headerColumn}>
-              <Text style={styles.headerLabel}>Data</Text>
-              <Text style={styles.headerValue}>
-                {new Date().toLocaleDateString('pt-BR')}
-              </Text>
-            </View>
-            <View style={styles.headerColumn}>
-              <Text style={styles.headerLabel}>Horário</Text>
-              <Text style={styles.headerValue}>
-                {new Date().toLocaleTimeString('pt-BR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                  hour12: false
-                })}
-              </Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.headerLogo} />
-      </View>
+  const diagnosis = getDiagnosisInfo(
+    lastCalculation?.currentProLabore || 0,
+    (lastCalculation?.maximumRecommended || 0) * 0.7,
+    lastCalculation?.maximumRecommended || 0
+  );
 
-      <View style={styles.content}>
-        <View style={styles.analysis}>
-          <Text style={styles.analysisTitle}>Análise e Recomendações</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Pró-labore Recomendado:</Text>
-            <Text style={styles.value}>
-              {lastCalculation ? 
-                (lastCalculation.maximumRecommended * 0.7).toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }) : 
-                'R$ 0,00'
-              }
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Pró-labore Máximo:</Text>
-            <Text style={styles.value}>
-              {lastCalculation ? 
-                lastCalculation.maximumRecommended.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }) : 
-                'R$ 0,00'
-              }
-            </Text>
-          </View>
-        </View>
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Relatório de Pró-labore</Text>
+            
+            <View style={styles.headerRow}>
+              <View style={styles.headerColumn}>
+                <Text style={styles.headerLabel}>Empresa</Text>
+                <Text style={styles.headerValue}>{companyName || 'Nome da Empresa'}</Text>
+              </View>
+              <View style={styles.headerColumn}>
+                <Text style={styles.headerLabel}>CNPJ</Text>
+                <Text style={styles.headerValue}>{cnpj || '00.000.000/0001-00'}</Text>
+              </View>
+            </View>
 
-        {Object.entries(groupedFields).map(([group, groupFields]) => (
-          <View key={group} style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {group === 'faturamento' ? 'Faturamento' :
-               group === 'custos_fixos' ? 'Custos Fixos' :
-               'Custos Variáveis'}
-            </Text>
-            {groupFields.filter(f => f.enabled).map((field) => (
-              <View key={field.id} style={styles.row}>
-                <Text style={styles.label}>{field.label}:</Text>
-                <Text style={styles.value}>
-                  {lastCalculation?.[group === 'faturamento' ? 'revenue' : 
-                                  group === 'custos_fixos' ? 'fixedCosts' : 
-                                  'variableCosts']?.[field.id] ?
-                    (group === 'custos_variaveis' ? 
-                      `${lastCalculation.variableCosts[field.id].toFixed(2)}%` :
-                      lastCalculation[group === 'faturamento' ? 'revenue' : 'fixedCosts'][field.id].toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      })
-                    ) :
-                    field.type === 'currency' ? 'R$ 0,00' :
-                    field.type === 'number' ? '0,00%' :
-                    field.type === 'date' ? new Date().toLocaleDateString('pt-BR') :
-                    'Exemplo'
-                  }
+            <View style={styles.headerDivider} />
+
+            <View style={styles.headerRow}>
+              <View style={styles.headerColumn}>
+                <Text style={styles.headerLabel}>Data</Text>
+                <Text style={styles.headerValue}>
+                  {new Date().toLocaleDateString('pt-BR')}
                 </Text>
               </View>
-            ))}
+              <View style={styles.headerColumn}>
+                <Text style={styles.headerLabel}>Horário</Text>
+                <Text style={styles.headerValue}>
+                  {new Date().toLocaleTimeString('pt-BR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                  })}
+                </Text>
+              </View>
+            </View>
           </View>
-        ))}
-      </View>
+          <View style={styles.headerLogo} />
+        </View>
 
-      <Text style={styles.footer}>
-        DC Advisors® - Todos os direitos reservados
-      </Text>
-    </Page>
-  </Document>
-);
+        <View style={styles.content}>
+          <View style={styles.analysis}>
+            <Text style={styles.analysisTitle}>Análise e Recomendações</Text>
+            <Text style={styles.analysisText}>{diagnosis}</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Pró-labore Recomendado:</Text>
+              <Text style={styles.value}>
+                {lastCalculation ? 
+                  (lastCalculation.maximumRecommended * 0.7).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }) : 
+                  'R$ 0,00'
+                }
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Pró-labore Máximo:</Text>
+              <Text style={styles.value}>
+                {lastCalculation ? 
+                  lastCalculation.maximumRecommended.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }) : 
+                  'R$ 0,00'
+                }
+              </Text>
+            </View>
+          </View>
+
+          {Object.entries(groupedFields).map(([group, groupFields]) => (
+            <View key={group} style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {group === 'faturamento' ? 'Faturamento' :
+                 group === 'custos_fixos' ? 'Custos Fixos' :
+                 'Custos Variáveis'}
+              </Text>
+              {groupFields.filter(f => f.enabled).map((field) => (
+                <View key={field.id} style={styles.row}>
+                  <Text style={styles.label}>{field.label}:</Text>
+                  <Text style={styles.value}>
+                    {lastCalculation?.[group === 'faturamento' ? 'revenue' : 
+                                    group === 'custos_fixos' ? 'fixedCosts' : 
+                                    'variableCosts']?.[field.id] ?
+                      (group === 'custos_variaveis' ? 
+                        `${lastCalculation.variableCosts[field.id].toFixed(2)}%` :
+                        lastCalculation[group === 'faturamento' ? 'revenue' : 'fixedCosts'][field.id].toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        })
+                      ) :
+                      field.type === 'currency' ? 'R$ 0,00' :
+                      field.type === 'number' ? '0,00%' :
+                      field.type === 'date' ? new Date().toLocaleDateString('pt-BR') :
+                      'Exemplo'
+                    }
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+
+        <Text style={styles.footer}>
+          DC Advisors® - Todos os direitos reservados
+        </Text>
+      </Page>
+    </Document>
+  );
+};
 
 export default function ProLaboreTemplate() {
   const [fields, setFields] = useState<TemplateField[]>([
@@ -446,23 +483,25 @@ export default function ProLaboreTemplate() {
                     
                     <div className="flex gap-12 mb-4">
                       <div>
-                        <span className="text-blue-200 block mb-1">Empresa</span>
-                        <span className="font-medium text-white">{companyName || 'Nome da Empresa'}</span>
+                        <span className="text-blue-200 block mb-1 text-xs">Empresa</span>
+                        <span className="font-medium text-white text-base">{companyName || 'Nome da Empresa'}</span>
                       </div>
                       <div>
-                        <span className="text-blue-200 block mb-1">CNPJ</span>
-                        <span className="font-medium text-white">{cnpj || '00.000.000/0001-00'}</span>
+                        <span className="text-blue-200 block mb-1 text-xs">CNPJ</span>
+                        <span className="font-medium text-white text-base">{cnpj || '00.000.000/0001-00'}</span>
                       </div>
                     </div>
 
+                    <div className="border-t border-blue-400 border-opacity-30 my-4 mx-1" />
+
                     <div className="flex gap-12">
                       <div>
-                        <span className="text-blue-200 block mb-1">Data</span>
-                        <span className="font-medium text-white">{new Date().toLocaleDateString('pt-BR')}</span>
+                        <span className="text-blue-200 block mb-1 text-xs">Data</span>
+                        <span className="font-medium text-white text-base">{new Date().toLocaleDateString('pt-BR')}</span>
                       </div>
                       <div>
-                        <span className="text-blue-200 block mb-1">Horário</span>
-                        <span className="font-medium text-white">
+                        <span className="text-blue-200 block mb-1 text-xs">Horário</span>
+                        <span className="font-medium text-white text-base">
                           {new Date().toLocaleTimeString('pt-BR', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -482,6 +521,16 @@ export default function ProLaboreTemplate() {
               <div className="p-5 space-y-4">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h2 className="text-lg font-bold text-blue-800 mb-2">Análise e Recomendações</h2>
+                  <p className="text-sm text-gray-700 mb-4">
+                    {lastCalculation ? 
+                      (lastCalculation.currentProLabore <= lastCalculation.maximumRecommended * 0.7 ?
+                        'O valor atual do pró-labore está adequado à realidade financeira da empresa' :
+                        lastCalculation.currentProLabore <= lastCalculation.maximumRecommended ?
+                        `O valor atual do Pró-labore está adequado à realidade financeira da empresa, mas próximo do limite, o que é arriscado. Garanta uma reserva financeira mínima de ${formatCurrency(lastCalculation.monthlyFixedCosts * 12)}` :
+                        'Considere ajustar o valor do pró-labore para garantir a saúde financeira da empresa'
+                      ) : 'Análise não disponível'
+                    }
+                  </p>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Pró-labore Recomendado:</span>

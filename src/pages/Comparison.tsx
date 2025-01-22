@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GitCompare, ArrowRight, TrendingDown, FileDown, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { FileDown, ChevronDown, ChevronUp, CheckCircle, XCircle, AlertCircle, History } from 'lucide-react';
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 
 interface SavedSimulation {
@@ -369,7 +369,7 @@ function Comparison() {
   const getRecommendationIcon = () => {
     const option = getBetterOption();
     if (option === 'empate') return <AlertCircle className="w-12 h-12 text-yellow-500" />;
-    return <CheckCircle2 className="w-12 h-12 text-green-500" />;
+    return <CheckCircle className="w-12 h-12 text-green-500" />;
   };
 
   if (simulations.length < 2) {
@@ -378,7 +378,7 @@ function Comparison() {
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Comparação entre Sistemas</h2>
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="text-center py-8">
-            <GitCompare size={48} className="mx-auto text-gray-400 mb-4" />
+            <History size={48} className="mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500">
               É necessário ter pelo menos duas simulações salvas para fazer comparações.
             </p>
@@ -642,21 +642,23 @@ function Comparison() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {selectedSimA.installments.map((installment, index) => {
-                          const diff = installment.payment - selectedSimB.installments[index].payment;
+                        {Array.from({ length: Math.max(selectedSimA.installments.length, selectedSimB.installments.length) }).map((_, index) => {
+                          const installmentA = selectedSimA.installments[index] || { number: index + 1, date: '-', payment: 0 };
+                          const installmentB = selectedSimB.installments[index] || { number: index + 1, date: '-', payment: 0 };
+                          const diff = installmentA.payment - installmentB.payment;
                           return (
                             <tr key={index} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {installment.number}
+                                {index + 1}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {installment.date}
+                                {installmentA.date !== '-' ? installmentA.date : installmentB.date}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {formatCurrency(installment.payment)}
+                                {formatCurrency(installmentA.payment)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {formatCurrency(selectedSimB.installments[index].payment)}
+                                {formatCurrency(installmentB.payment)}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`text-sm ${diff > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -667,8 +669,7 @@ function Comparison() {
                                 </span>
                               </td>
                             </tr>
-                          );
-                        })}
+                          ); })}
                       </tbody>
                     </table>
                   </div>

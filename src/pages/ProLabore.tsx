@@ -56,22 +56,26 @@ export default function ProLabore() {
   };
 
   const validateData = () => {
-    if (!companyName.trim()) {
-      return 'O nome da empresa é obrigatório';
+    // Verifica se há pelo menos um valor em faturamento
+    const hasRevenue = Object.values(revenue).some(value => value > 0);
+    if (!hasRevenue) {
+      return 'É necessário informar pelo menos um valor de faturamento';
     }
 
-    if (companyName.trim().length < 3) {
-      return 'O nome da empresa deve ter pelo menos 3 caracteres';
+    // Verifica se há pelo menos um valor em custos fixos
+    if (fixedCosts.monthly <= 0) {
+      return 'É necessário informar os custos mensais';
     }
 
-    const cnpjNumbers = cnpj.replace(/\D/g, '');
-    if (cnpjNumbers.length !== 14) {
-      return 'O CNPJ deve ter 14 dígitos';
+    // Verifica se o pró-labore atual foi informado
+    if (fixedCosts.proLabore <= 0) {
+      return 'É necessário informar o pró-labore atual';
     }
 
-    const totalRevenue = Object.values(revenue).reduce((a, b) => a + b, 0);
-    if (totalRevenue <= 0) {
-      return 'É necessário informar pelo menos uma fonte de receita';
+    // Verifica se há pelo menos um valor em custos variáveis
+    const hasVariableCosts = Object.values(variableCosts).some(value => value > 0);
+    if (!hasVariableCosts) {
+      return 'É necessário informar pelo menos um custo variável';
     }
 
     return null;

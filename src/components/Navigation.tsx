@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calculator, History, BarChart2, GitCompare, DollarSign, Settings } from 'lucide-react';
+import { Calculator, History, BarChart2, GitCompare, DollarSign, FileText } from 'lucide-react';
 
 function Navigation() {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -36,9 +36,9 @@ function Navigation() {
               <DollarSign size={20} />
               <span>Pró-labore</span>
             </NavLink>
-            <NavLink to="/pro-labore-template" className={linkClass}>
-              <Settings size={20} />
-              <span>Template</span>
+            <NavLink to="/pro-labore-report" className={linkClass}>
+              <FileText size={20} />
+              <span>Relatório</span>
             </NavLink>
           </div>
         </div>
